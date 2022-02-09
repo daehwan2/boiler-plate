@@ -203,3 +203,103 @@ userSchema.methods.generateToken = function (cb) {
   });
 };
 ```
+
+<br/>
+<br/>
+
+## Auth 기능 만들기
+
+> Auth 기능의 이유
+
+1. 페이지 이동 때마다 로그인되어있는지 안되어있는지 체크.
+2. 글을 쓸때나 지울때 같은데 권한이 있는지 체크.
+
+![](./images/token.png)
+
+> 과정
+
+1. 쿠키에 저장된 Token을 가져와서 복호화를 한다.
+2. 토큰을 이용해서 DB에서 user를 찾는다.
+
+```javascript
+//    index.js
+...
+
+app.get("/api/users/auth", auth, (req, res) => {
+  //여기까지 미들웨어를 통과해 왔다면 Authentication이 True라는 말.
+  res.status(200).json({
+    _id: req.user._id,
+    //role 0 => 일반유저 아니면 관리자
+    isAdmin: req.user.roll === 0 ? false : true,
+    isAuth: true,
+    email: req.user.email,
+    name: req.user.name,
+    lastname: req.user.lastname,
+    role: req.user.role,
+    image: req.user.image,
+  });
+});
+```
+
+```javascript
+//      midleware/auth.js
+const { User } = require("../models/User");
+
+let auth = (req, res, next) => {
+  //인증처리를 하는곳.
+  // 1. 클라이언트 쿠키에서 토큰을 가져옴.
+  let token = req.cookies.x_auth;
+
+  // 2, 토큰을 복호화한후 유저를 찾는다.
+  User.findByToken(token, (err, user) => {
+    if (err) throw err;
+    if (!user) return res.json({ isAuth: false, error: true });
+    req.token = token;
+    req.user = user;
+    next();
+  });
+  // 3. 유저가 있으면 인증 okay
+  // 4. 유저가 없으면 인증 no
+};
+module.exports = { auth };
+```
+
+```javascript
+// models/User.js 에 findByToken()메서드.
+
+userSchema.statics.findByToken = function (token, cb) {
+  var user = this;
+
+  //토큰을 decode 한다.
+  jwt.verify(token, "secretToken", function (err, deocded) {
+    //유저 아이디를 이용해서 유저를 찾은 다음에
+    //클라이언트에서 가져온 token 과 DB에 보관된 토큰이 일치하는지 과인
+
+    user.findOne({ _id: deocded, token: token }, function (err, user) {
+      if (err) return cb(err);
+      cb(null, user);
+    });
+  });
+};
+```
+
+<br/>
+<br/>
+
+## 로그아웃 기능 만들기
+
+> 로그아웃하려는 유저를 데이터베이스에서 찾아서 그 유저의 토큰을 지워준다.
+
+```javascript
+//    index.js
+...
+
+app.get("/api/users/logout", auth, (req, res) => {
+  User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, user) => {
+    if (err) return res.json({ success: false, err });
+    return res.status(200).send({
+      success: true,
+    });
+  });
+});
+```
