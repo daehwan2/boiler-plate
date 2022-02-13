@@ -3,16 +3,16 @@ import { useDispatch } from "react-redux";
 import { loginUser } from "../../../_actions/user_action";
 import { useNavigate } from "react-router-dom";
 
-function LoginPage(props) {
+function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const onEmailHnadler = (e) => {
+  const onEmailHandler = (e) => {
     setEmail(e.currentTarget.value);
   };
-  const onPasswordHnadler = (e) => {
+  const onPasswordHandler = (e) => {
     setPassword(e.currentTarget.value);
   };
   const onSubmitHandler = (e) => {
@@ -44,9 +44,9 @@ function LoginPage(props) {
         style={{ display: "flex", flexDirection: "column" }}
         onSubmit={onSubmitHandler}>
         <label>Email</label>
-        <input type="email" value={email} onChange={onEmailHnadler} />
+        <input type="email" value={email} onChange={onEmailHandler} />
         <label>Password</label>
-        <input type="password" value={password} onChange={onPasswordHnadler} />
+        <input type="password" value={password} onChange={onPasswordHandler} />
         <button type="submit">Login</button>
       </form>
     </div>
